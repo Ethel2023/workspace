@@ -1,6 +1,5 @@
 #include <iostream>
 #include <vector>
-#include <iomanip>
 
 class Image {
 public:
@@ -9,9 +8,9 @@ public:
     std::vector<std::vector<int>> data;//vector动态数组
 
     // 初始化
-    Image(int w, int h, int init_val = 0) : width(w), height(h) 
+    Image(int w, int h, int n = 0) : width(w), height(h) 
     {
-        data = std::vector<std::vector<int>>(height, std::vector<int>(width, init_val));
+        data = std::vector<std::vector<int>>(height, std::vector<int>(width, n));
     }
 
     //取来该像素点的值
@@ -25,11 +24,11 @@ public:
     }
 
     // 改变该像素点的值
-    void setPixel(int x, int y, int num) 
+    void setPixel(int x, int y, int n) 
     {
         if (x >= 0 && x < width && y >= 0 && y < height) 
         {
-            data[y][x] = num;
+            data[y][x] = n;
         }
     }
 
@@ -48,10 +47,39 @@ public:
     }
 };
 
+class SE {
+public:
+    int width;
+    int height;
+    std::vector<std::vector<int>> data;
+
+    SE(int w, int h, int n = 0) : width(w), height(h) 
+    {
+        data = std::vector<std::vector<int>>(height, std::vector<int>(width, n));
+    }
+
+    int getPixel(int x, int y) const 
+    {
+        if (x < 0 || x >= width || y < 0 || y >= height) 
+        {
+            return 0;
+        }
+        return data[y][x];
+    }
+
+    void setPixel(int x, int y, int n) 
+    {
+        if (x >= 0 && x < width && y >= 0 && y < height) 
+        {
+            data[y][x] = n;
+        }
+    }  
+};
+
 //膨胀函数
-Image dilate(Image& input, std::vector<std::vector<int>>& SE) {
-    int kw = SE[0].size();
-    int kh = SE.size();
+Image dilate(Image& input, SE& se) {
+    int kw = se.width;
+    int kh = se.height;
     int cx = kw / 2; 
     int cy = kh / 2; 
 
@@ -74,7 +102,7 @@ Image dilate(Image& input, std::vector<std::vector<int>>& SE) {
                     {
                         
                         // 4. 如果相对位置是1 
-                        if (SE[ky][kx] == 1) 
+                        if (se.getPixel(kx, ky) == 1) 
                         {
                             // 计算需要被膨胀的坐标
                             int outx = x + kx - cx;
@@ -91,9 +119,9 @@ Image dilate(Image& input, std::vector<std::vector<int>>& SE) {
     return output;
 }
 // 腐蚀函数
-Image erode(Image& input, std::vector<std::vector<int>>& SE) {
-    int kw = SE[0].size();
-    int kh = SE.size();
+Image erode(Image& input, SE& se) {
+    int kw = se.width;
+    int kh = se.height;
     int cx = kw / 2; 
     int cy = kh / 2; 
 
@@ -115,7 +143,7 @@ Image erode(Image& input, std::vector<std::vector<int>>& SE) {
                     for (int kx = 0; kx < kw; ++kx) 
                     {
                         // 4. 如果相对位置处是1
-                        if (SE[ky][kx] == 1) 
+                        if (se.getPixel(kx, ky) == 1) 
                         {
                             int inx = x + kx - cx;
                             int iny = y + ky - cy;
@@ -159,23 +187,36 @@ int main()
         }
     }
 
-    // 定义 5x5 的全为1的结构元素
-    std::vector<std::vector<int>> SE(5, std::vector<int>(5, 1));
+    int sw, sh;
+    std::cout << "输入结构元素的宽度和高度: ";
+    std::cin >> sw >> sh;
+
+    SE se(sw, sh, 0);
+    std::cout << "请输入结构元素矩阵:" << std::endl;
+    for (int i = 0; i < sh; ++i) 
+    {
+        for (int j = 0; j < sw; ++j) 
+        {
+            int n;
+            std::cin >> n;
+            se.setPixel(j, i, (n == 1 ? 1 : 0));
+        }
+    }
 
     std::cout << "原图：" << "\n";
     img.print();
 
-    Image dilated_img = dilate(img, SE);
+    Image dilated_img = dilate(img, se);
     std::cout << "膨胀后：" << "\n";
     dilated_img.print();
 
-    Image eroded_img = erode(img, SE);
+    Image eroded_img = erode(img, se);
     std::cout << "腐蚀后：" << "\n";
     eroded_img.print();
 
+    Image final_img = erode(dilated_img, se);
     std::cout << "先膨胀再腐蚀：" << "\n";
-    Image final_img = erode(dilated_img, SE);
     final_img.print();
-    
+
     return 0;
 }
