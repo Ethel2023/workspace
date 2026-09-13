@@ -77,11 +77,11 @@ Image dilate(Image& input, std::vector<std::vector<int>>& SE) {
                         if (SE[ky][kx] == 1) 
                         {
                             // 计算需要被膨胀的坐标
-                            int out_x = x + kx - cx;
-                            int out_y = y + ky - cy;
+                            int outx = x + kx - cx;
+                            int outy = y + ky - cy;
                             
                             // 该点位直接暴力变成1
-                            output.setPixel(out_x, out_y, 1); 
+                            output.setPixel(outx, outy, 1); 
                         }
                     }
                 }
@@ -90,7 +90,56 @@ Image dilate(Image& input, std::vector<std::vector<int>>& SE) {
     }
     return output;
 }
+// 腐蚀函数
+Image erode(Image& input, std::vector<std::vector<int>>& SE) {
+    int kw = SE[0].size();
+    int kh = SE.size();
+    int cx = kw / 2; 
+    int cy = kh / 2; 
 
+    Image output(input.width, input.height, 0);
+
+    // 思路：1. 遍历原图所有像素
+    for (int y = 0; y < input.height; ++y) 
+    {
+        for (int x = 0; x < input.width; ++x)
+        {
+            // 2. 只取前景点
+            if (input.getPixel(x, y) == 1)
+            {
+                bool fit = true; 
+
+                // 3. 以该点为中心，遍历结构元素
+                for (int ky = 0; ky < kh; ++ky) 
+                {
+                    for (int kx = 0; kx < kw; ++kx) 
+                    {
+                        // 4. 如果相对位置处是1
+                        if (SE[ky][kx] == 1) 
+                        {
+                            int inx = x + kx - cx;
+                            int iny = y + ky - cy;
+                            
+                            // 5. 只要原图中对应位置不匹配就停止循环
+                            if (input.getPixel(inx, iny) == 0) 
+                            {
+                                fit = false;
+                                break; 
+                            }
+                        }
+                    }
+                    if (!fit) break; 
+                }
+                // 6. 如果结构元素全落在前景内，该点保留
+                if (fit) 
+                {
+                    output.setPixel(x, y, 1);
+                }
+            }
+        }
+    }
+    return output;
+}
 int main() 
 {
     int w, h;
@@ -113,13 +162,20 @@ int main()
     // 定义 5x5 的全为1的结构元素
     std::vector<std::vector<int>> SE(5, std::vector<int>(5, 1));
 
-    std::cout << "原图：" << std::endl;
+    std::cout << "原图：" << "\n";
     img.print();
 
     Image dilated_img = dilate(img, SE);
-
-    std::cout << "膨胀后：" << std::endl;
+    std::cout << "膨胀后：" << "\n";
     dilated_img.print();
 
+    Image eroded_img = erode(img, SE);
+    std::cout << "腐蚀后：" << "\n";
+    eroded_img.print();
+
+    std::cout << "先膨胀再腐蚀：" << "\n";
+    Image final_img = erode(dilated_img, SE);
+    final_img.print();
+    
     return 0;
 }
